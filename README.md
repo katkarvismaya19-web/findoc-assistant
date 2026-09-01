@@ -151,8 +151,8 @@ the index returns.
 
 ## Evaluate
 
-`eval/questions.json` labelled against the ten synthetic documents, so evaluation runs immediately
-
+`eval/questions.json` ships with 25 questions labelled against the ten
+synthetic documents, so evaluation runs immediately:
 
 ```bash
 python -m eval.evaluate --collections findoc_1000 findoc_500 --k 3 --show-misses
@@ -160,10 +160,9 @@ python -m eval.evaluate --collections findoc_1000 findoc_500 --k 3 --show-misses
 
 Measured output is in Results below.
 
-When you replace the demo corpus with real documents, relabel the question
-set. This helper ranks pages by how many concrete, checkable facts they
-contain and walks you through them, which removes the hunting but leaves the
-judgement to you:
+When you swap in a different corpus, relabel the question set. This helper
+ranks pages by how many concrete, checkable facts they contain and walks you
+through them, which removes the hunting but leaves the judgement to you:
 
 ```bash
 python -m scripts.label_helper
