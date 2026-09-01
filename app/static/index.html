@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinDoc Assistant — retrieval over regulatory documents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F8FA;
+    --ink:#16202B;
+    --ink-soft:#5A6875;
+    --rule:#D5DAE0;
+    --seal:#1F4E7A;
+    --signal:#B8791F;
+    --hit:#F0EDE4;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* ---- masthead: styled like the head of a circular ---- */
+  header{border-bottom:2px solid var(--ink);margin-bottom:0}
+  .masthead{display:flex;justify-content:space-between;align-items:baseline;
+    gap:24px;flex-wrap:wrap;padding:28px 0 14px}
+  .title{font-family:"Source Serif 4",Georgia,serif;font-size:30px;
+    font-weight:600;letter-spacing:-.01em;margin:0}
+  .sub{color:var(--ink-soft);font-size:14px;margin:4px 0 0;max-width:56ch}
+  .corpus{font-size:13px;color:var(--ink-soft);text-align:right;line-height:1.7}
+  .corpus b{color:var(--ink);font-weight:600}
+
+  /* ---- query bar ---- */
+  .query{padding:22px 0 26px;border-bottom:1px solid var(--rule)}
+  .field{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text]{
+    flex:1 1 340px;min-width:0;padding:12px 14px;
+    border:1px solid var(--rule);border-radius:3px;background:var(--white);
+    font-family:inherit;font-size:15px;color:var(--ink);
+  }
+  input[type=text]:focus{outline:2px solid var(--seal);outline-offset:-1px;border-color:var(--seal)}
+  button.ask{
+    padding:12px 22px;border:none;border-radius:3px;background:var(--seal);
+    color:#fff;font-family:inherit;font-size:15px;font-weight:500;cursor:pointer;
+  }
+  button.ask:hover{background:#173C5E}
+  button.ask:disabled{background:var(--ink-soft);cursor:progress}
+  button.ask:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  .controls{display:flex;gap:20px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:var(--white)}
+  .seg button{
+    padding:7px 16px;border:none;background:transparent;cursor:pointer;
+    font-family:inherit;font-size:13px;color:var(--ink-soft);
+    border-right:1px solid var(--rule);
+  }
+  .seg button:last-child{border-right:none}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--seal);outline-offset:-2px}
+  .seg-label{font-size:13px;color:var(--ink-soft)}
+
+  .examples{margin-top:14px;font-size:13px;color:var(--ink-soft)}
+  .examples button{
+    background:none;border:none;padding:0;margin-right:16px;cursor:pointer;
+    font-family:inherit;font-size:13px;color:var(--seal);text-align:left;
+    text-decoration:underline;text-underline-offset:3px;
+  }
+  @media (max-width:560px){
+    .examples button{display:block;margin:6px 0 0}
+  }
+
+  /* ---- results ---- */
+  .results{display:grid;grid-template-columns:1fr 400px;gap:44px;padding:30px 0 60px;align-items:start}
+  @media (max-width:880px){.results{grid-template-columns:1fr;gap:32px}}
+
+  h2{font-size:12px;font-weight:600;color:var(--ink-soft);margin:0 0 12px;
+    padding-bottom:7px;border-bottom:1px solid var(--rule)}
+
+  .answer{
+    font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.7;
+    max-width:68ch;white-space:pre-wrap;
+  }
+  .answer mark{background:var(--hit);color:var(--ink);padding:0 4px;border-radius:2px;
+    font-family:"IBM Plex Sans",sans-serif;font-size:12px;font-weight:500;
+    white-space:nowrap;margin:0 1px}
+
+  /* passage list — numbered because retrieval output genuinely is a ranking */
+  ol.passages{list-style:none;margin:0;padding:0;counter-reset:p}
+  ol.passages li{
+    counter-increment:p;position:relative;padding:14px 0 16px 34px;
+    border-bottom:1px solid var(--rule);
+  }
+  ol.passages li::before{
+    content:counter(p);position:absolute;left:0;top:15px;
+    width:21px;height:21px;border:1px solid var(--ink);border-radius:50%;
+    font-size:11px;font-weight:600;display:grid;place-items:center;
+  }
+  .cite{font-size:12px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:10px}
+  .cite .file{color:var(--ink);font-weight:500;word-break:break-word}
+  .bar{height:3px;background:var(--rule);margin:7px 0 9px}
+  .bar span{display:block;height:100%;background:var(--signal)}
+  .excerpt{font-family:"Source Serif 4",Georgia,serif;font-size:14px;
+    line-height:1.6;color:var(--ink-soft)}
+
+  .note{font-size:13px;color:var(--ink-soft);max-width:60ch}
+  .err{border-left:3px solid #A03323;padding:12px 16px;background:var(--white);
+    font-size:14px;max-width:60ch}
+  .err b{display:block;margin-bottom:3px}
+  footer{border-top:1px solid var(--rule);padding:20px 0 40px;
+    font-size:13px;color:var(--ink-soft)}
+  footer a{color:var(--seal)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap masthead">
+    <div>
+      <h1 class="title">FinDoc Assistant</h1>
+      <p class="sub">Ask a question about the loaded regulatory circulars. Every answer shows the passages it came from, so you can check the source rather than trust the summary.</p>
+    </div>
+    <div class="corpus" id="corpus">Checking index…</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="query">
+    <div class="field">
+      <input type="text" id="q" placeholder="How often must KYC be updated for high risk customers?" autocomplete="off">
+      <button class="ask" id="ask">Ask</button>
+    </div>
+    <div class="controls">
+      <span class="seg-label">Retrieval</span>
+      <div class="seg" role="group" aria-label="Retrieval strategy">
+        <button data-s="hybrid" aria-pressed="true">Hybrid</button>
+        <button data-s="dense" aria-pressed="false">Dense</button>
+        <button data-s="bm25" aria-pressed="false">BM25</button>
+      </div>
+      <span class="seg-label">Switch strategies on the same question to see the ranking change.</span>
+    </div>
+    <div class="examples" id="examples">Try:
+      <button>What is the turnaround time for reversing a failed transaction?</button>
+      <button>Which customers require enhanced due diligence?</button>
+    </div>
+  </section>
+
+  <section class="results">
+    <div>
+      <h2>Answer</h2>
+      <div class="answer" id="answer"><span class="note">Ask a question to begin.</span></div>
+    </div>
+    <div>
+      <h2>Retrieved passages, ranked</h2>
+      <ol class="passages" id="passages"></ol>
+      <p class="note" id="pnote">Bars show the retrieval score within this result set.</p>
+    </div>
+  </section>
+
+  <footer class="wrap" style="padding-left:0;padding-right:0">
+    Hybrid retrieval fuses BM25 keyword scores with dense vector similarity.
+    <a href="https://github.com/katkarvismaya19-web/findoc-assistant">Source and evaluation results on GitHub</a>
+  </footer>
+</div>
+
+<script>
+let strategy = "hybrid";
+
+document.querySelectorAll(".seg button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", "false"));
+    b.setAttribute("aria-pressed", "true");
+    strategy = b.dataset.s;
+    if (document.getElementById("q").value.trim()) ask();
+  };
+});
+
+document.querySelectorAll("#examples button").forEach(b => {
+  b.onclick = () => { document.getElementById("q").value = b.textContent; ask(); };
+});
+
+document.getElementById("ask").onclick = ask;
+document.getElementById("q").addEventListener("keydown", e => { if (e.key === "Enter") ask(); });
+
+fetch("/health").then(r => r.json()).then(d => {
+  document.getElementById("corpus").innerHTML = d.chunks
+    ? "Index <b>" + d.collection + "</b><br>" + d.chunks.toLocaleString() + " passages indexed"
+    : "<b>No index loaded</b><br>Run app.ingest to build one";
+}).catch(() => {
+  document.getElementById("corpus").textContent = "Index unavailable";
+});
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+async function ask() {
+  const question = document.getElementById("q").value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById("ask");
+  const answer = document.getElementById("answer");
+  const list = document.getElementById("passages");
+
+  btn.disabled = true;
+  btn.textContent = "Searching";
+  answer.innerHTML = '<span class="note">Retrieving passages…</span>';
+  list.innerHTML = "";
+
+  try {
+    const res = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, strategy, k: 4 })
+    });
+
+    if (!res.ok) {
+      const detail = (await res.json().catch(() => ({}))).detail || res.statusText;
+      answer.innerHTML = '<div class="err"><b>No results</b>' + escapeHtml(detail) + "</div>";
+      return;
+    }
+
+    const data = await res.json();
+
+    // Turn [1] style references into visible chips tied to the passage list.
+    answer.innerHTML = escapeHtml(data.answer)
+      .replace(/\[(\d+)\]/g, (_, n) => "<mark>passage " + n + "</mark>");
+
+    const max = Math.max(...data.sources.map(s => s.score), 1e-9);
+    list.innerHTML = data.sources.map(s => `
+      <li>
+        <div class="cite">
+          <span class="file">${escapeHtml(s.source)}</span>
+          <span>p.${s.page} · ${s.score.toFixed(3)}</span>
+        </div>
+        <div class="bar"><span style="width:${Math.max(4, (s.score / max) * 100)}%"></span></div>
+        <div class="excerpt">${escapeHtml(s.excerpt)}</div>
+      </li>`).join("");
+
+    document.getElementById("pnote").textContent =
+      "Ranked by " + strategy + ". Bars are relative within this result set.";
+  } catch (e) {
+    answer.innerHTML = '<div class="err"><b>Request failed</b>The service may still be starting up. Try again in a moment.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Ask";
+  }
+}
+</script>
+</body>
+</html>

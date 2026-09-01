@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:7860"
+    environment:
+      - PORT=7860
+    env_file:
+      - .env
+    volumes:
+      # Persist the index and model cache across restarts.
+      - ./data:/home/user/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
