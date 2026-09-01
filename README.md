@@ -151,8 +151,8 @@ the index returns.
 
 ## Evaluate
 
-`eval/questions.json` ships with 25 questions labelled against the demo
-corpus, so evaluation runs immediately:
+`eval/questions.json` labelled against the ten synthetic documents, so evaluation runs immediately
+
 
 ```bash
 python -m eval.evaluate --collections findoc_1000 findoc_500 --k 3 --show-misses
@@ -200,13 +200,13 @@ single embedding stays closer to one fact instead of averaging several. At
 1000 the dense index loses ground that BM25 has to cover.
 
 **Hybrid does not win on this corpus.** BM25 alone beats it at chunk size
-1000 (0.920 vs 0.880). The demo documents are synthetic and the questions
-were written against that same text, so question and passage share vocabulary
-far more than they would with real regulation — near-ideal conditions for
-exact keyword matching. RRF pulls in dense results that rank lower, costing a
-couple of hits. The honest read: hybrid's value is insurance against
-paraphrased questions, and this corpus does not contain any. Re-running on the
-real RBI corpus is the test that would actually settle it.
+1000 (0.920 vs 0.880). The labelled questions were written against the
+synthetic documents, so question and passage share vocabulary more than they
+would if the questions had been written independently — favourable conditions
+for exact keyword matching. RRF pulls in dense results that rank lower,
+costing a couple of hits. The honest read: hybrid's value is insurance against
+paraphrased questions, and this question set has few of them. Relabelling
+against the real RBI documents is the test that would settle it.
 
 **Where hybrid still misses.** The remaining failures are paraphrases with no
 shared tokens — "ignores repeated requests to refresh their paperwork" for
