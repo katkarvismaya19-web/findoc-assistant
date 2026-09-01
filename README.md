@@ -63,8 +63,9 @@ cosine similarity against a BM25 score — they are not on comparable scales.
 
 ## Setup
 
-A demo corpus of ten documents ships in `data/pdfs/`, so there is nothing to
-download before the first run.
+The corpus in `data/pdfs/` ships with the repo — ten synthetic documents plus
+nine real RBI KYC master directions — so there is nothing to download before
+the first run.
 
 **Windows** — double-click `setup.bat`. It builds the environment, the
 indexes, and starts the app. After the first run use `run.bat` to start it and
@@ -79,12 +80,15 @@ bash setup.sh
 Retrieval works without an API key. Add a free Groq key (console.groq.com) to
 `.env` when you want written answers rather than just ranked passages.
 
-### About the demo corpus
+### About the corpus
 
-The bundled documents are synthetic. They imitate the structure of Indian
-banking circulars — numbered clauses, defined terms, circular references,
-stated time periods — so the retrieval problem is realistic, but no clause is
-real regulation.
+The corpus is mixed. Nine are real RBI KYC master directions, pulled with
+`scripts/fetch_corpus.py`. The other ten are synthetic — they imitate the
+structure of Indian banking circulars, with numbered clauses, defined terms,
+circular references and stated time periods, so the retrieval problem is
+realistic, but no clause in them is real regulation. The labelled question set
+targets the synthetic ten; the real documents sit in the index as distractors,
+which is the harder and more honest test.
 
 Before deploying publicly, swap in real documents:
 
@@ -172,7 +176,7 @@ one page of the expected page, since chunk boundaries do not align with pages.
 
 ## Results
 
-Demo corpus (synthetic), 25 questions, k=3, page tolerance 1.
+19-document corpus, 25 labelled questions, k=3, page tolerance 1.
 
 **Chunk size 1000** (2,434 chunks)
 
